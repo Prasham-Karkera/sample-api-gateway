@@ -1,0 +1,68 @@
+name: ka-chow-api-gateway
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fleetbite-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      GW_ENV: development
+      GW_JWT_SECRET_KEY: dev-only-secret-change-in-production-256bit
+      GW_USER_SERVICE_URL: http://user-service:8001
+      GW_ORDER_SERVICE_URL: http://order-service:8002
+      GW_INVENTORY_SERVICE_URL: http://inventory-service:8003
+      GW_NOTIFICATION_SERVICE_URL: http://notification-service:8004
+      GW_RATE_LIMIT_RPM: "300"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - fleetbite-network
+    depends_on:
+      - user-service
+      - order-service
+      - inventory-service
+      - notification-service
+
+  # Reference to external services (defined in their own repos)
+  user-service:
+    image: fleetbite/user-service:latest
+    container_name: fleetbite-user-service
+    expose:
+      - "8001"
+    networks:
+      - fleetbite-network
+
+  order-service:
+    image: fleetbite/order-service:latest
+    container_name: fleetbite-order-service
+    expose:
+      - "8002"
+    networks:
+      - fleetbite-network
+
+  inventory-service:
+    image: fleetbite/inventory-service:latest
+    container_name: fleetbite-inventory-service
+    expose:
+      - "8003"
+    networks:
+      - fleetbite-network
+
+  notification-service:
+    image: fleetbite/notification-service:latest
+    container_name: fleetbite-notification-service
+    expose:
+      - "8004"
+    networks:
+      - fleetbite-network
+
+networks:
+  fleetbite-network:
+    name: fleetbite-network
+    driver: bridge
