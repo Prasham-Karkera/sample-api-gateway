@@ -34,3 +34,9 @@ async def liveness() -> HealthResponse:
 async def readiness() -> HealthResponse:
     from app.config import settings
     return HealthResponse(status="ok", service="api-gateway", version=settings.APP_VERSION)
+
+
+@router.get("/test", tags=["Testing"])
+async def test_endpoint() -> dict[str, str]:
+    """Sample endpoint for manual testing and validation."""
+    return {"message": "API Gateway is reachable and responsive!"}
