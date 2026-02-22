@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import time
+from datetime import datetime, timezone
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -36,12 +39,38 @@ async def readiness() -> HealthResponse:
     return HealthResponse(status="ok", service="api-gateway", version=settings.APP_VERSION)
 
 
+class StatusResponse(BaseModel):
+    service: str
+    version: str
+    environment: str
+    timestamp: str
+    uptime_seconds: float
+
+
+_START_TIME = time.monotonic()
+
+
+@router.get(
+    "/status",
+    response_model=StatusResponse,
+    summary="Detailed service status",
+    description="Returns runtime details including environment, current timestamp, and uptime.",
+    tags=["Health"],
+)
+async def service_status() -> StatusResponse:
+    from app.config import settings
+    return StatusResponse(
+        service="api-gateway",
+        version=settings.APP_VERSION,
+        environment=settings.ENV,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        uptime_seconds=round(time.monotonic() - _START_TIME, 2),
+    )
+
+
 @router.get("/test", tags=["Testing"])
 async def test_endpoint() -> dict[str, str]:
     """Sample endpoint for manual testing and validation."""
     return {"message": "API Gateway is reachable and responsive!"}
 
-@router.get("/test1", tags=["Testing"])
-async def test_endpoint() -> dict[str, str]:
-    """Sample endpoint for manual testing and validation."""
-    return {"message": "API Gateway is reachable and responsive!"}
+
